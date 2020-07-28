@@ -76,10 +76,10 @@ public class BankingUI {
             }
             switch (menu) {
                 case MAIN_MENU:
-                    switch (this.input) {
+                    switch (this.input) { // Selecting menus
                         case "1": // Create account
                             credentials = banking.createAccount().getCredentials();
-                            menu = Menu.ACCOUNT_CREATED;
+                            menu = Menu.ACCOUNT_CREATED; // This menu needs two arguments for printing: number and pin
                             args.add(credentials.getNumber());
                             args.add(credentials.getPin());
                             credentials.reset();
@@ -95,9 +95,9 @@ public class BankingUI {
                     }
                     break;
                 case ACCOUNT_MENU:
-                    switch (input) {
+                    switch (input) { // Selecting menus
                         case "1": // Balance
-                            menu = Menu.BALANCE;
+                            menu = Menu.BALANCE; // This menu needs balance as argument
                             args.add(String.valueOf(banking.currentAccount().getBalance()));
                             break;
                         case "2": // Logout
@@ -116,13 +116,12 @@ public class BankingUI {
                     break;
                 case ENTERING_PIN:
                     credentials.setPin(input);
-                    if (banking.login(credentials)) {
+                    if (banking.login(credentials)) { //attempt to login after inputting PIN
                         menu = Menu.LOGIN_SUCCESSFUL;
                     } else {
                         menu = Menu.LOGIN_FAILED;
                     }
                     break;
-
                 case LOGIN_SUCCESSFUL:
                 case BALANCE:
                     menu = Menu.ACCOUNT_MENU;
@@ -138,7 +137,7 @@ public class BankingUI {
                     break;
                 case EXITING:
                     credentials.reset();
-                    return;
+                    return; // exiting from UI
             }
         }
 
