@@ -1,7 +1,9 @@
 package banking;
 
-import java.util.Observer;
 
+/**
+ * Класс хранит информацию об аккаунте и предоставляет доступ к его данным
+ */
 public class Account {
 
     public Account(String number, String pin) {

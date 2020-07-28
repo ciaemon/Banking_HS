@@ -11,6 +11,14 @@ public class BankingSql implements Banking {
     private String user;
     private String userPwd;
 
+    /**
+     * Constructor initialize database and create table if database is new
+     * @param url connection URL
+     * @param db name of database
+     * @param user user name
+     * @param userPwd user password
+     * @throws SQLException
+     */
     public BankingSql(String url, String db, String user, String userPwd) throws SQLException {
         this.url = url;
         this.db = db;
@@ -21,10 +29,18 @@ public class BankingSql implements Banking {
         con.createStatement().execute(sql);
     }
 
+    /**
+     * @return new Connection to database
+     * @throws SQLException
+     */
     public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(url + db);
     }
 
+    /**
+     * Testing connection
+     * @return true if connection successful
+     */
     public boolean testConnection() {
         try {
             getConnection();

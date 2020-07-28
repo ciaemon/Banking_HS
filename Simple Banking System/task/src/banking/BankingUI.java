@@ -4,6 +4,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+/**
+ * enum represents menu items in Banking UI. Each Menu object has two fields: information to be printed and
+ * boolean value, which indicates if UI needs input from user in that Menu
+ */
 enum Menu {
     MAIN_MENU ("1. Create account\n" +
             "2. Log into account\n" +
@@ -23,27 +27,43 @@ enum Menu {
     LOGOUT("You have successfully logged out!\n", false);
 
 
+    /**
+     * Info to be printed. It can be formatted String.
+     */
     String printedInfo;
+    /**
+     * Is input is needed
+     */
     boolean inputNeeded;
 
     Menu(String printedInfo, boolean inputNeeded) {
         this.printedInfo = printedInfo;
         this.inputNeeded = inputNeeded;
     }
-
-
-    public void print() {
-        System.out.print(printedInfo);
-    }
 }
 
+/**
+ * Console UI used for controlling Banking object. UI starts when object creates with Banking object as argument.
+ * UI is an infinite loop with changing menu items represented by enum Menu
+ */
 public class BankingUI {
 
+    /**
+     * Current menu, starts from Main menu
+     */
     private Menu menu = Menu.MAIN_MENU;
-    // boolean processing = true;
     final private Scanner scanner = new Scanner(System.in);
+    /**
+     * Input for menu if necessary
+     */
     private String input;
+    /**
+     * Current arguments for formatted String in current menu
+     */
     private ArrayList<String> args = new ArrayList<>();
+    /**
+     * Current credentials
+     */
     private Credentials credentials = Credentials.emptyCredentials();
 
     public BankingUI(Banking banking) throws SQLException {
@@ -52,7 +72,6 @@ public class BankingUI {
             printMenu();
 
             if (menu.inputNeeded) {
-                //System.out.print("Input:  ");
                 this.input = scanner.nextLine();
             }
             switch (menu) {
@@ -126,9 +145,12 @@ public class BankingUI {
 
     }
 
+    /**
+     * Printing info from Menu with arguments and clearing.
+     */
     private void printMenu() {
        System.out.printf(menu.printedInfo, args.toArray());
-        args.clear();
+       args.clear();
     }
 
 
