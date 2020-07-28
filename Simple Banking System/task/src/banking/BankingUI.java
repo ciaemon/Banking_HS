@@ -2,8 +2,13 @@ package banking;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
+/**
+ * enum represents menu items in Banking UI. Each Menu object has two fields: information to be printed and
+ * boolean value, which indicates if UI needs input from user in that Menu
+ */
 enum Menu {
     MAIN_MENU ("1. Create account\n" +
             "2. Log into account\n" +
@@ -23,27 +28,43 @@ enum Menu {
     LOGOUT("You have successfully logged out!\n", false);
 
 
+    /**
+     * Info to be printed. It can be formatted String.
+     */
     String printedInfo;
+    /**
+     * Is input is needed
+     */
     boolean inputNeeded;
 
     Menu(String printedInfo, boolean inputNeeded) {
         this.printedInfo = printedInfo;
         this.inputNeeded = inputNeeded;
     }
-
-
-    public void print() {
-        System.out.print(printedInfo);
-    }
 }
 
+/**
+ * Console UI used for controlling Banking object. UI starts when object creates with Banking object as argument.
+ * UI is an infinite loop with changing menu items represented by enum Menu
+ */
 public class BankingUI {
 
+    /**
+     * Current menu, starts from Main menu
+     */
     private Menu menu = Menu.MAIN_MENU;
-    // boolean processing = true;
     final private Scanner scanner = new Scanner(System.in);
+    /**
+     * Input for menu if necessary
+     */
     private String input;
-    private ArrayList<String> args = new ArrayList<>();
+    /**
+     * Current arguments for formatted String in current menu
+     */
+    private List<String> args = new ArrayList<>();
+    /**
+     * Current credentials
+     */
     private Credentials credentials = Credentials.emptyCredentials();
 
     public BankingUI(Banking banking) throws SQLException {
@@ -52,15 +73,14 @@ public class BankingUI {
             printMenu();
 
             if (menu.inputNeeded) {
-                //System.out.print("Input:  ");
                 this.input = scanner.nextLine();
             }
             switch (menu) {
                 case MAIN_MENU:
-                    switch (this.input) {
+                    switch (this.input) { // Selecting menus
                         case "1": // Create account
                             credentials = banking.createAccount().getCredentials();
-                            menu = Menu.ACCOUNT_CREATED;
+                            menu = Menu.ACCOUNT_CREATED; // This menu needs two arguments for printing: number and pin
                             args.add(credentials.getNumber());
                             args.add(credentials.getPin());
                             credentials.reset();
@@ -76,9 +96,9 @@ public class BankingUI {
                     }
                     break;
                 case ACCOUNT_MENU:
-                    switch (input) {
+                    switch (input) { // Selecting menus
                         case "1": // Balance
-                            menu = Menu.BALANCE;
+                            menu = Menu.BALANCE; // This menu needs balance as argument
                             args.add(String.valueOf(banking.currentAccount().getBalance()));
                             break;
                         case "2": // Logout
@@ -97,13 +117,12 @@ public class BankingUI {
                     break;
                 case ENTERING_PIN:
                     credentials.setPin(input);
-                    if (banking.login(credentials)) {
+                    if (banking.login(credentials)) { //attempt to login after inputting PIN
                         menu = Menu.LOGIN_SUCCESSFUL;
                     } else {
                         menu = Menu.LOGIN_FAILED;
                     }
                     break;
-
                 case LOGIN_SUCCESSFUL:
                 case BALANCE:
                     menu = Menu.ACCOUNT_MENU;
@@ -119,16 +138,19 @@ public class BankingUI {
                     break;
                 case EXITING:
                     credentials.reset();
-                    return;
+                    return; // exiting from UI
             }
         }
 
 
     }
 
+    /**
+     * Printing info from Menu with arguments and clearing.
+     */
     private void printMenu() {
        System.out.printf(menu.printedInfo, args.toArray());
-        args.clear();
+       args.clear();
     }
 
 

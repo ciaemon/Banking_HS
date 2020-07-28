@@ -1,7 +1,9 @@
 package banking;
 
-import java.util.Observer;
 
+/**
+ * Represents bank account
+ */
 public class Account {
 
     public Account(String number, String pin) {

@@ -1,6 +1,18 @@
 package banking;
 
+/**
+ * Credentials info for account
+ */
 public class Credentials {
+
+    private String number;
+    private String pin;
+
+    public Credentials(String number, String pin) {
+        this.number = number;
+        this.pin = pin;
+    }
+
     public static Credentials emptyCredentials() {
         return new Credentials("", "");
     }
@@ -26,13 +38,7 @@ public class Credentials {
         pin = "";
     }
 
-    String number;
-    String pin;
 
-    public Credentials(String number, String pin) {
-        this.number = number;
-        this.pin = pin;
-    }
 
 
 

@@ -10,21 +10,39 @@ public class BankingSql implements Banking {
     private String db;
     private String user;
     private String userPwd;
+    private CredentialsGenerator generator;
 
+    /**
+     * Constructor initialize database and create table if database is new
+     * @param url connection URL
+     * @param db name of database
+     * @param user user name
+     * @param userPwd user password
+     * @throws SQLException
+     */
     public BankingSql(String url, String db, String user, String userPwd) throws SQLException {
         this.url = url;
         this.db = db;
         this.user = user;
         this.userPwd = userPwd;
+        this.generator = new CredentialsGenerator("400000");
         Connection con = getConnection();
         String sql = "CREATE TABLE IF NOT EXISTS card (id INTEGER, number TEXT, pin TEXT, balance INTEGER DEFAULT 0);";
         con.createStatement().execute(sql);
     }
 
+    /**
+     * @return new Connection to database
+     * @throws SQLException
+     */
     public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(url + db);
     }
 
+    /**
+     * Testing connection
+     * @return true if connection successful
+     */
     public boolean testConnection() {
         try {
             getConnection();
@@ -36,7 +54,7 @@ public class BankingSql implements Banking {
         System.err.println("Connection successful");
         return true;
     }
-
+/*
     private String generateNumber() {
         int[] accNum = new int[16];
         accNum[0] = 4;
@@ -74,7 +92,7 @@ public class BankingSql implements Banking {
     }
 
     final Random random = new Random();
-
+*/
     @Override
     public Account createAccount() throws SQLException {
         Connection conn = getConnection();
@@ -86,11 +104,11 @@ public class BankingSql implements Banking {
         }
        // int lastIndex = rs.getInt(2);
         rs.close();
-        String newNumber = generateNumber();
+        String newNumber = generator.nextNumber();
         while (numbers.contains(newNumber)) {
-            newNumber = generateNumber();
+            newNumber = generator.nextNumber();
         }
-        String newPin = generatePin();
+        String newPin = generator.nextPin();
         PreparedStatement prep = conn.prepareStatement("INSERT INTO card (number, pin) VALUES (?, ?);");
         //prep.setInt(1, lastIndex + 1);
         prep.setString(1, newNumber);
