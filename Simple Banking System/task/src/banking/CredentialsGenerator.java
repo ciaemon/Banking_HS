@@ -2,19 +2,20 @@ package banking;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
  * Generator for card numbers and pins. Constructor argument is a constant digits at start of a number
  */
 public class CredentialsGenerator {
-    private ArrayList<Integer> prefix;
+    private List<Integer> prefix;
     private Random random = new Random();
 
     public CredentialsGenerator (String prefix) {
         if (!prefix.matches("\\d{0,15}")) {
             throw new InvalidParameterException("Prefix must contain only digits and not exceed 15 characters"); }
-        ArrayList<Integer> pref = new ArrayList<>();
+        List<Integer> pref = new ArrayList<>();
         for (var digit:prefix.toCharArray()) {
             pref.add(Character.getNumericValue(digit));
         }

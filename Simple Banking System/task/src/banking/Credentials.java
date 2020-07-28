@@ -5,8 +5,8 @@ package banking;
  */
 public class Credentials {
 
-    String number;
-    String pin;
+    private String number;
+    private String pin;
 
     public Credentials(String number, String pin) {
         this.number = number;

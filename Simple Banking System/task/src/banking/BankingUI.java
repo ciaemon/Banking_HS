@@ -2,6 +2,7 @@ package banking;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -60,7 +61,7 @@ public class BankingUI {
     /**
      * Current arguments for formatted String in current menu
      */
-    private ArrayList<String> args = new ArrayList<>();
+    private List<String> args = new ArrayList<>();
     /**
      * Current credentials
      */

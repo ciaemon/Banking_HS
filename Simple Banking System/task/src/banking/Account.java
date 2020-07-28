@@ -2,7 +2,7 @@ package banking;
 
 
 /**
- * Класс хранит информацию об аккаунте и предоставляет доступ к его данным
+ * Represents bank account
  */
 public class Account {
 
