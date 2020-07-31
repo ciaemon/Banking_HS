@@ -11,11 +11,11 @@ import java.util.Scanner;
  */
 public class BankingUIEnum implements BankingUI {
 
+    final private Scanner scanner = new Scanner(System.in);
     /**
      * Current menu, starts from Main menu
      */
     private Menu menu = Menu.MAIN_MENU;
-    final private Scanner scanner = new Scanner(System.in);
     /**
      * Input for menu if necessary
      */
@@ -63,7 +63,15 @@ public class BankingUIEnum implements BankingUI {
                             menu = Menu.BALANCE; // This menu needs balance as argument
                             args.add(String.valueOf(banking.currentAccount().getBalance()));
                             break;
-                        case "2": // Logout
+                        case "2": // Add income
+                            menu = Menu.INCOME_ADD;
+                            break;
+                        case "3": // Transfer
+                            menu = Menu.TRANSFER_ENTER_CARD;
+                            break;
+                        case "4": // CLose account
+                            menu = Menu.CLOSE_ACCOUNT;
+                        case "5": // Log out
                             menu = Menu.LOGOUT;
                             break;
                         case "0": // Exit
@@ -87,6 +95,10 @@ public class BankingUIEnum implements BankingUI {
                     break;
                 case LOGIN_SUCCESSFUL:
                 case BALANCE:
+                case TRANSFER_ERROR:
+                case TRANSFER_SUCCESS:
+                case INCOME_ADD_ERROR:
+                case INCOME_ADDED:
                     menu = Menu.ACCOUNT_MENU;
                     break;
                 case LOGIN_FAILED:
@@ -102,22 +114,46 @@ public class BankingUIEnum implements BankingUI {
                     credentials.reset();
                     return; // exiting from UI
                 case INCOME_ADD:
-
-                    break;
-                case INCOME_ADDED:
-                    menu = Menu.ACCOUNT_MENU;
-                    break;
-                case INCOME_ADD_ERROR:
-                    menu = Menu.ACCOUNT_MENU;
+                    try {
+                        banking.addIncome(Long.parseLong(input));
+                        menu = Menu.INCOME_ADDED;
+                    } catch (IllegalArgumentException e) {
+                        menu = Menu.INCOME_ADD_ERROR;
+                        args.add(e.getMessage());
+                    }
                     break;
                 case TRANSFER_ENTER_CARD:
-
+                    if (!CredentialsGenerator.checkLuhn(input)) {
+                      args.add("Probably you made mistake in the card number. Please try again!");
+                      menu = Menu.TRANSFER_ERROR;
+                    } else if (input.equals(banking.currentAccount().getNumber())) {
+                        args.add("You can't transfer money to the same account!");
+                        menu = Menu.TRANSFER_ERROR;
+                    } else if (!banking.isAccountExist(input)) {
+                        args.add("Such a card does not exist.");
+                        menu = Menu.TRANSFER_ERROR;
+                    } else {
+                        credentials.setNumber(input);
+                        menu = Menu.TRANSFER_ENTER_AMOUNT;
+                    }
                     break;
                 case TRANSFER_ENTER_AMOUNT:
-                    break;
-                case TRANSFER_ERROR:
+                    switch (banking.transfer(credentials.getNumber(), Long.parseLong(input))) {
+                        case 0:
+                            menu = Menu.TRANSFER_SUCCESS;
+                            break;
+                        case 1:
+                            menu = Menu.TRANSFER_ERROR;
+                            args.add("Not enough money!");
+                            break;
+                        default:
+                            menu = Menu.TRANSFER_ERROR;
+                            args.add("Unknown error");
+                    }
                     break;
                 case CLOSE_ACCOUNT:
+                    banking.closeAccount();
+                    menu = Menu.MAIN_MENU;
                     break;
             }
         }
@@ -129,8 +165,8 @@ public class BankingUIEnum implements BankingUI {
      * Printing info from Menu with arguments and clearing.
      */
     private void printMenu() {
-       System.out.printf(menu.printedInfo, args.toArray());
-       args.clear();
+        System.out.printf(menu.printedInfo, args.toArray());
+        args.clear();
     }
 
     /**
@@ -138,11 +174,14 @@ public class BankingUIEnum implements BankingUI {
      * boolean value, which indicates if UI needs input from user in that Menu
      */
     private enum Menu {
-        MAIN_MENU ("1. Create account\n" +
+        MAIN_MENU("1. Create account\n" +
                 "2. Log into account\n" +
                 "0. Exit\n", true),
-        ACCOUNT_MENU ("1. Balance\n" +
-                "2. Log out\n" +
+        ACCOUNT_MENU("1. Balance\n" +
+                "2. Add income\n" +
+                "3. Do transfer\n" +
+                "4. Close account\n" +
+                "5. Log out\n" +
                 "0. Exit\n", true),
         LOGIN_ENTERING_NUMBER("Enter your card number: ", true),
         LOGIN_ENTERING_PIN("Enter your PIN: ", true),
@@ -160,6 +199,7 @@ public class BankingUIEnum implements BankingUI {
         TRANSFER_ENTER_CARD("Transfer\nEnter card number: ", true),
         TRANSFER_ENTER_AMOUNT("Enter how much money you want to transfer: ", true),
         TRANSFER_ERROR("%s\n", false),
+        TRANSFER_SUCCESS("Success!\n", false),
         CLOSE_ACCOUNT("Your account was closed\n", false);
 
 

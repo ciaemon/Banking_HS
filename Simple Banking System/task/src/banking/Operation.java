@@ -1,6 +1,6 @@
 package banking;
 
-    @FunctionalInterface
+@FunctionalInterface
 public interface Operation {
     void apply();
 }

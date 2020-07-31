@@ -27,17 +27,18 @@ public class CredentialsGenerator {
     }
 
     public String nextNumber() {
-        int[] accNum = new int[16];
         int sum = 0;
         StringBuilder number = new StringBuilder();
-        for (var digit:prefix) {
-            sum += digit;
-            number.append(digit);
-        }
 
-        for (int i = prefix.size(); i < 15; i++) {
-            accNum[i] = random.nextInt(10);
-            int digit = accNum[i];
+        for (int i = 0; i < 15; i++) {
+            int digit;
+            if (i < prefix.size()) {
+                digit = prefix.get(i);
+            } else {
+                digit = random.nextInt(10);
+            }
+            number.append(digit);
+
             if (i % 2 == 0) {
                 digit *= 2;
                 if (digit > 9) {
@@ -45,9 +46,12 @@ public class CredentialsGenerator {
                 }
             }
             sum += digit;
-            number.append(accNum[i]);
         }
-        int checkSum = (10 - sum % 10) % 10;
+
+        int checkSum = 0;
+        if (sum % 10 != 0) {
+            checkSum = 10 - sum % 10;
+        }
         number.append(checkSum);
         return number.toString();
     }
@@ -66,19 +70,26 @@ public class CredentialsGenerator {
      * @return code of completion. 1 - correct number, 0 - number doesn' t pass Luhn algorithm, -1 - incorrect format
      */
     public static boolean checkLuhn(String number) {
-        if (!number.matches("\\d{16}")) return false;
+        if (!number.matches("\\d{16}")) {
+            System.err.println("Regex mismatch");
+            return false;
+        }
         int checkSum = 0;
         for (int i = 0; i < 16; i++) {
             int digit = Character.getNumericValue(number.charAt(i));
-            if (i == 15) {
-                checkSum += digit;
-                break;
+            if (i % 2 == 0) {
+                digit *= 2;
+                if (digit > 9) {
+                    digit -= 9;
+                }
             }
-            if (i % 2 == 0) digit *= 2;
-            if (i > 9) digit -= 9;
+
             checkSum += digit;
         }
-        if (checkSum % 10 != 0) return false;
+        if (checkSum % 10 != 0) {
+            System.err.println("Luhn error");
+            return false;
+        }
         return true;
     }
 }
