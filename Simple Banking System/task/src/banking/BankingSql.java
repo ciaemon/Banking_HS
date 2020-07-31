@@ -2,7 +2,6 @@ package banking;
 
 import java.sql.*;
 import java.util.HashSet;
-import java.util.Random;
 
 public class BankingSql implements Banking {
     private Account currentAccount;
@@ -11,12 +10,14 @@ public class BankingSql implements Banking {
     private String user;
     private String userPwd;
     private CredentialsGenerator generator;
+    //private Connection conn;
 
     /**
      * Constructor initialize database and create table if database is new
-     * @param url connection URL
-     * @param db name of database
-     * @param user user name
+     *
+     * @param url     connection URL
+     * @param db      name of database
+     * @param user    user name
      * @param userPwd user password
      * @throws SQLException
      */
@@ -29,6 +30,7 @@ public class BankingSql implements Banking {
         Connection con = getConnection();
         String sql = "CREATE TABLE IF NOT EXISTS card (id INTEGER, number TEXT, pin TEXT, balance INTEGER DEFAULT 0);";
         con.createStatement().execute(sql);
+        con.close();
     }
 
     /**
@@ -36,11 +38,18 @@ public class BankingSql implements Banking {
      * @throws SQLException
      */
     public Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(url + db);
+        try {
+           Connection conn = DriverManager.getConnection(url + db);
+           return conn;
+        } catch(SQLException e) {
+          return getConnection();
+        }
+
     }
 
     /**
      * Testing connection
+     *
      * @return true if connection successful
      */
     public boolean testConnection() {
@@ -54,45 +63,7 @@ public class BankingSql implements Banking {
         System.err.println("Connection successful");
         return true;
     }
-/*
-    private String generateNumber() {
-        int[] accNum = new int[16];
-        accNum[0] = 4;
-        int sum = 8;
-        StringBuilder number = new StringBuilder("400000");
-        for (int i = 6; i < 15; i++) {
-            accNum[i] = random.nextInt(10);
-            int digit = accNum[i];
-            if (i % 2 == 0) {
-                digit *= 2;
-                if (digit > 9) {
-                    digit -= 9;
-                }
-            }
 
-            sum += digit;
-            number.append(accNum[i]);
-        }
-        // System.out.println(sum);
-
-        int checkSum = (10 - sum % 10) % 10;
-        // System.out.println(checkSum);
-        number.append(checkSum);
-
-
-        return number.toString();
-    }
-
-    private String generatePin() {
-        StringBuilder cin = new StringBuilder();
-        for (int i = 0; i < 4; i++) {
-            cin.append(random.nextInt(10));
-        }
-        return cin.toString();
-    }
-
-    final Random random = new Random();
-*/
     @Override
     public Account createAccount() throws SQLException {
         Connection conn = getConnection();
@@ -102,7 +73,7 @@ public class BankingSql implements Banking {
         while (rs.next()) {
             numbers.add(rs.getString(1));
         }
-       // int lastIndex = rs.getInt(2);
+        // int lastIndex = rs.getInt(2);
         rs.close();
         String newNumber = generator.nextNumber();
         while (numbers.contains(newNumber)) {
@@ -115,7 +86,9 @@ public class BankingSql implements Banking {
         prep.setString(2, newPin);
         prep.execute();
         prep.close();
+        conn.close();
         return new Account(newNumber, newPin);
+
     }
 
     @Override
@@ -128,10 +101,12 @@ public class BankingSql implements Banking {
         ResultSet rs = prep.executeQuery();
         if (!rs.next()) {
             rs.getStatement().close();
-            return false; }
-        currentAccount = new Account(credentials);
-        currentAccount.setBalance(rs.getLong(3));
+            return false;
+        }
+        currentAccount = new Account(credentials, rs.getLong("balance"));
         rs.getStatement().close();
+        conn.close();
+        currentAccount.printInfo();
         return true;
     }
 
@@ -144,5 +119,114 @@ public class BankingSql implements Banking {
     @Override
     public void logout() {
         currentAccount = null;
+    }
+
+    /**
+     * Transfer amount of money to recipient
+     *
+     * @param recipient
+     * @param amount
+     * @return code of completion.\n
+     * 0 - success,\n
+     * 1 - not enough money,\n
+     * 2 - invalid recipient number,\n
+     * 3 - recipient does not exist
+     * 4 - recipient is current account
+     * 5 - amount is less or equal to zero
+     */
+    @Override
+    public int transfer(String recipient, long amount) throws SQLException {
+        if (amount <= 0) return 5; // wrong amount
+        if (currentAccount.getBalance() < amount) return 1; // not enough money
+        if (!CredentialsGenerator.checkLuhn(recipient)) return 2; // invalid number
+        if (currentAccount.getNumber().equals(recipient)) return 4; // recipient is sender
+        Connection conn = getConnection();
+        conn.setAutoCommit(false);
+        String sql = "UPDATE card SET balance = balance + ? WHERE number = ?;";
+        PreparedStatement prepSend = conn.prepareStatement(sql);
+        prepSend.setLong(1, -amount);
+        prepSend.setString(2, currentAccount.getNumber());
+        PreparedStatement prepReceive = conn.prepareStatement(sql);
+        prepReceive.setLong(1, amount);
+        prepReceive.setString(2, recipient);
+        prepSend.executeUpdate();
+        if (prepReceive.executeUpdate() != 1) {
+            conn.rollback();
+            prepReceive.close();
+            prepSend.close();
+            return 3; // No recipient in db
+        }
+        conn.commit();
+        prepReceive.close();
+        prepSend.close();
+        conn.close();
+        refreshCurrentAccount();
+        return 0; // success
+    }
+
+    /**
+     * Closes current account
+     */
+    @Override
+    public void closeAccount() throws SQLException {
+        Connection conn = getConnection();
+        PreparedStatement prep = conn.prepareStatement("DELETE FROM card WHERE number = ?;");
+        prep.setString(1, currentAccount.getNumber());
+        prep.execute();
+        prep.close();
+        conn.close();
+        currentAccount = null;
+    }
+
+    /**
+     * Adding income to current account
+     *
+     * @param amount
+     */
+    @Override
+    public void addIncome(long amount) throws SQLException {
+        if (amount <= 0) throw new IllegalArgumentException("Amount of income must be positive");
+        Connection conn = getConnection();
+        PreparedStatement prep = conn.prepareStatement("UPDATE card SET balance = balance + ? WHERE number = ?;");
+        prep.setLong(1, amount);
+        prep.setString(2, currentAccount.getNumber());
+        prep.execute();
+        prep.close();
+        conn.close();
+        refreshCurrentAccount();
+    }
+
+    @Override
+    public boolean isAccountExist(String number) throws SQLException {
+        boolean res = false;
+        Connection conn = getConnection();
+        PreparedStatement prep = conn.prepareStatement("SELECT number FROM card WHERE number = ?;");
+        prep.setString(1, number);
+        ResultSet rs = prep.executeQuery();
+        if (rs.next()) {
+            res = true;
+        }
+        prep.close();
+        conn.close();
+        return res;
+    }
+
+    /**
+     * Update currentAccount data from banking system (only balance now)
+     */
+    @Override
+    public void refreshCurrentAccount() throws SQLException {
+        if (currentAccount != null) {
+            Connection conn = getConnection();
+            PreparedStatement prep = conn.prepareStatement("SELECT balance FROM card WHERE number = ?;");
+            prep.setString(1, currentAccount.getNumber());
+            ResultSet rs = prep.executeQuery();
+            rs.next();
+            currentAccount = new Account(currentAccount.getCredentials(), rs.getLong(1));
+            prep.close();
+            conn.close();
+            currentAccount.printInfo();
+
+        }
     }
 }

@@ -6,21 +6,36 @@ package banking;
  */
 public class Account {
 
+    private String number;
+    private String pin;
+    private long balance = 0;
+
     public Account(String number, String pin) {
         this.number = number;
         this.pin = pin;
     }
+
     public Account(Credentials cred) {
         this.number = cred.getNumber();
         this.pin = cred.getPin();
     }
 
-    public String getNumber() {
-        return number;
+    public Account(String number, String pin, long balance) {
+        this.number = number;
+        this.pin = pin;
+        this.balance = balance;
     }
 
-    public void setNumber(String number) {
-        this.number = number;
+    public Account(Credentials cred, long balance) {
+        this.number = cred.getNumber();
+        this.pin = cred.getPin();
+        this.balance = balance;
+
+    }
+
+
+    public String getNumber() {
+        return number;
     }
 
     public String getPin() {
@@ -31,20 +46,16 @@ public class Account {
         return new Credentials(number, pin);
     }
 
-    public void setPin(String pin) {
-        this.pin = pin;
-    }
-
     public long getBalance() {
         return balance;
     }
 
-    public void setBalance(long balance) {
-        this.balance = balance;
+    public void printInfo() {
+        System.err.println("-----------Account info------------------------");
+        System.err.printf("Number %s\n", number);
+        System.err.printf("Pin %s\n", pin);
+        System.err.printf("Balance %d\n", balance);
+        System.err.println("----------------------------------------");
     }
-
-    private String number;
-    private String pin;
-    private long balance = 0;
 
 }
