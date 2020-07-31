@@ -71,6 +71,7 @@ public class BankingUIEnum implements BankingUI {
                             break;
                         case "4": // CLose account
                             menu = Menu.CLOSE_ACCOUNT;
+                            break;
                         case "5": // Log out
                             menu = Menu.LOGOUT;
                             break;
