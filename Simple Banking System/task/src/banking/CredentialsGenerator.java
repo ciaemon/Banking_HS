@@ -59,4 +59,26 @@ public class CredentialsGenerator {
         }
         return pin.toString();
     }
+
+    /**
+     * Check number for correct format
+     * @param number - Number to check
+     * @return code of completion. 1 - correct number, 0 - number doesn' t pass Luhn algorithm, -1 - incorrect format
+     */
+    public static boolean checkLuhn(String number) {
+        if (!number.matches("\\d{16}")) return false;
+        int checkSum = 0;
+        for (int i = 0; i < 16; i++) {
+            int digit = Character.getNumericValue(number.charAt(i));
+            if (i == 15) {
+                checkSum += digit;
+                break;
+            }
+            if (i % 2 == 0) digit *= 2;
+            if (i > 9) digit -= 9;
+            checkSum += digit;
+        }
+        if (checkSum % 10 != 0) return false;
+        return true;
+    }
 }

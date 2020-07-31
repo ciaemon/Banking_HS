@@ -54,45 +54,7 @@ public class BankingSql implements Banking {
         System.err.println("Connection successful");
         return true;
     }
-/*
-    private String generateNumber() {
-        int[] accNum = new int[16];
-        accNum[0] = 4;
-        int sum = 8;
-        StringBuilder number = new StringBuilder("400000");
-        for (int i = 6; i < 15; i++) {
-            accNum[i] = random.nextInt(10);
-            int digit = accNum[i];
-            if (i % 2 == 0) {
-                digit *= 2;
-                if (digit > 9) {
-                    digit -= 9;
-                }
-            }
 
-            sum += digit;
-            number.append(accNum[i]);
-        }
-        // System.out.println(sum);
-
-        int checkSum = (10 - sum % 10) % 10;
-        // System.out.println(checkSum);
-        number.append(checkSum);
-
-
-        return number.toString();
-    }
-
-    private String generatePin() {
-        StringBuilder cin = new StringBuilder();
-        for (int i = 0; i < 4; i++) {
-            cin.append(random.nextInt(10));
-        }
-        return cin.toString();
-    }
-
-    final Random random = new Random();
-*/
     @Override
     public Account createAccount() throws SQLException {
         Connection conn = getConnection();
@@ -129,8 +91,7 @@ public class BankingSql implements Banking {
         if (!rs.next()) {
             rs.getStatement().close();
             return false; }
-        currentAccount = new Account(credentials);
-        currentAccount.setBalance(rs.getLong(3));
+        currentAccount = new Account(credentials, rs.getLong("balance"));
         rs.getStatement().close();
         return true;
     }
@@ -143,6 +104,65 @@ public class BankingSql implements Banking {
 
     @Override
     public void logout() {
+        currentAccount = null;
+    }
+
+    /**
+     * Transfer amount of money to recipient
+     *
+     * @param recipient
+     * @param amount
+     * @return code of completion.\n
+     * 0 - success,\n
+     * 1 - not enough money,\n
+     * 2 - invalid recipient number,\n
+     * 3 - recipient does not exist
+     * 4 - recipient is current account
+     * 5 - amount is less or equal to zero
+     */
+    @Override
+    public int transfer(String recipient, long amount) throws SQLException {
+        if (amount <= 0) return 5; // wrong amount
+        if (currentAccount.getBalance() < amount) return 1; // not enough money
+        if (!CredentialsGenerator.checkLuhn(recipient)) return 2; // invalid number
+        if (currentAccount.getNumber().equals(recipient)) return 4; // recipient is sender
+        Connection conn = getConnection();
+        /*
+        String sqlGetRec = "SELECT number, balance FROM card WHERE number = ?;";
+        PreparedStatement prep = conn.prepareStatement(sqlGetRec);
+        prep.setString(1, recipient);
+        ResultSet recRS = prep.executeQuery();
+        if (!recRS.next()) {
+            prep.close();
+            return 3;
+        }
+
+        long recBalance = recRS.getLong("balance");
+         */
+        Statement transfer = conn.createStatement();
+        String formattedSql = "UPDATE card SET balance = balance + %d WHERE number = %s";
+        transfer.addBatch(String.format(formattedSql, amount, recipient)); // add to recipient
+        transfer.addBatch(String.format(formattedSql, -amount, currentAccount.getNumber())); // from sender
+
+        if (transfer.executeBatch()[0] != 1) { // First query must affect exactly one row
+            transfer.cancel();
+            return 3; // No recipient in db
+        }
+        transfer.close();
+
+        return 0; // success
+    }
+
+    /**
+     * Closes current account
+     */
+    @Override
+    public void closeAccount() throws SQLException {
+        Connection conn = getConnection();
+        PreparedStatement prep = conn.prepareStatement("DELETE FROM card WHERE number = ?;");
+        prep.setString(1, currentAccount.getNumber());
+        prep.execute();
+        prep.close();
         currentAccount = null;
     }
 }
